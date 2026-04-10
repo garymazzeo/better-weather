@@ -1,0 +1,25 @@
+{
+  "name": "better-weather",
+  "version": "1.0.0",
+  "description": "NWS weather UI (static HTML + PHP proxy + Chart.js)",
+  "scripts": {
+    "vendor": "cp node_modules/chart.js/dist/chart.umd.min.js js/vendor/",
+    "postinstall": "npm run vendor",
+    "serve": "php -S 127.0.0.1:8080 -t ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/garymazzeo/better-weather.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/garymazzeo/better-weather/issues"
+  },
+  "homepage": "https://github.com/garymazzeo/better-weather#readme",
+  "dependencies": {
+    "chart.js": "^4.5.1"
+  }
+}

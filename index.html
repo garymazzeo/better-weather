@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Better Weather — NWS forecast</title>
+    <meta
+      name="description"
+      content="Seven-day National Weather Service forecast with hourly charts."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="site-header__inner">
+        <h1 class="site-title">Better Weather</h1>
+        <p class="site-tagline">National Weather Service · up to ~7 days</p>
+      </div>
+    </header>
+
+    <main id="main" class="main">
+      <section class="panel location-panel" aria-labelledby="location-heading">
+        <h2 id="location-heading" class="panel__title">Location</h2>
+        <div class="location-actions">
+          <button type="button" class="btn btn--primary" id="btn-geolocate">
+            Use my location
+          </button>
+          <span class="location-actions__or" aria-hidden="true">or</span>
+          <form class="coords-form" id="form-coords" novalidate>
+            <label class="sr-only" for="input-lat">Latitude</label>
+            <input
+              id="input-lat"
+              name="lat"
+              type="text"
+              inputmode="decimal"
+              placeholder="Latitude"
+              autocomplete="off"
+              aria-describedby="coords-hint"
+            />
+            <label class="sr-only" for="input-lon">Longitude</label>
+            <input
+              id="input-lon"
+              name="lon"
+              type="text"
+              inputmode="decimal"
+              placeholder="Longitude"
+              autocomplete="off"
+            />
+            <button type="submit" class="btn btn--secondary">Load forecast</button>
+          </form>
+        </div>
+        <p id="coords-hint" class="hint">
+          Coordinates use WGS84 (decimal degrees). Geolocation needs a secure
+          (HTTPS) context in most browsers.
+        </p>
+        <p class="location-readout" id="location-readout" aria-live="polite"></p>
+      </section>
+
+      <div
+        class="status-banner"
+        id="status-banner"
+        role="status"
+        aria-live="polite"
+        hidden
+      ></div>
+
+      <section
+        class="panel chart-panel"
+        aria-labelledby="chart-heading"
+        id="section-chart"
+        hidden
+      >
+        <div class="panel__head">
+          <h2 id="chart-heading" class="panel__title">Hourly (next ~7 days)</h2>
+          <p class="panel__sub" id="chart-subtitle"></p>
+        </div>
+        <div class="chart-scroll" tabindex="0" role="region" aria-label="Hourly forecast chart">
+          <div class="chart-scroll__inner">
+            <canvas id="chart-hourly" height="320" aria-hidden="true"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="panel periods-panel"
+        aria-labelledby="periods-heading"
+        id="section-periods"
+        hidden
+      >
+        <h2 id="periods-heading" class="panel__title">Forecast periods</h2>
+        <p class="panel__sub">12-hour periods · scroll horizontally</p>
+        <div class="period-strip" id="period-strip" role="list"></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        Data from the
+        <a href="https://www.weather.gov/documentation/services-web-api"
+          >NWS API</a
+        >. Not for emergency use.
+      </p>
+    </footer>
+
+    <script src="js/vendor/chart.umd.min.js" defer></script>
+    <script src="js/app.js" defer></script>
+  </body>
+</html>
