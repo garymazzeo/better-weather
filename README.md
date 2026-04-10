@@ -1,6 +1,6 @@
 # Better Weather
 
-Minimal static front-end (HTML/CSS/vanilla JavaScript) with **Chart.js**, backed by a small **PHP** proxy to the [National Weather Service API](https://www.weather.gov/documentation/services-web-api). Forecasts cover roughly the **next seven days** (hourly + 12-hour periods).
+Minimal static front-end (HTML/CSS/vanilla JavaScript) with **Chart.js**, backed by a small **PHP** proxy to the [National Weather Service API](https://www.weather.gov/documentation/services-web-api). Hourly charts use **`forecastGridData`** (temperature, dewpoint, wind chill, wind, humidity, sky cover, precip, and decoded weather) with day/night shading via **[SunCalc](https://github.com/mourner/suncalc)** (vendored). Twelve-hour narrative cards still use the standard grid `forecast` endpoint. Data covers roughly the **next seven days**.
 
 ## Requirements
 

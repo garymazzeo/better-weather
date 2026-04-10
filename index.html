@@ -6,7 +6,7 @@
     <title>Better Weather — NWS forecast</title>
     <meta
       name="description"
-      content="Seven-day National Weather Service forecast with hourly charts."
+      content="Seven-day National Weather Service forecast with grid charts."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -22,7 +22,7 @@
     <header class="site-header">
       <div class="site-header__inner">
         <h1 class="site-title">Better Weather</h1>
-        <p class="site-tagline">National Weather Service · up to ~7 days</p>
+        <p class="site-tagline">National Weather Service · grid forecast · ~7 days</p>
       </div>
     </header>
 
@@ -73,18 +73,74 @@
       ></div>
 
       <section
-        class="panel chart-panel"
+        class="panel chart-stack-panel"
         aria-labelledby="chart-heading"
         id="section-chart"
         hidden
       >
         <div class="panel__head">
-          <h2 id="chart-heading" class="panel__title">Hourly (next ~7 days)</h2>
+          <h2 id="chart-heading" class="panel__title">Hourly grid forecast</h2>
           <p class="panel__sub" id="chart-subtitle"></p>
         </div>
-        <div class="chart-scroll" tabindex="0" role="region" aria-label="Hourly forecast chart">
-          <div class="chart-scroll__inner">
-            <canvas id="chart-hourly" height="320" aria-hidden="true"></canvas>
+        <div
+          class="stacked-charts-scroll"
+          tabindex="0"
+          role="region"
+          aria-label="Hourly forecast charts, scroll horizontally"
+        >
+          <div class="stacked-charts" id="stacked-charts">
+            <div
+              class="stacked-charts__panel stacked-charts__panel--temp"
+              id="wrap-panel-a"
+              hidden
+            >
+              <p class="stacked-charts__label">Temperature, dewpoint, wind chill (°F)</p>
+              <div class="stacked-charts__canvas-wrap">
+                <canvas id="chart-panel-a" aria-label="Temperature chart"></canvas>
+              </div>
+            </div>
+            <div
+              class="stacked-charts__panel stacked-charts__panel--wind"
+              id="wrap-panel-b"
+              hidden
+            >
+              <p class="stacked-charts__label">Wind speed and gusts (mph)</p>
+              <div class="stacked-charts__canvas-wrap">
+                <canvas id="chart-panel-b" aria-label="Wind chart"></canvas>
+              </div>
+            </div>
+            <div
+              class="stacked-charts__panel stacked-charts__panel--humidity"
+              id="wrap-panel-c"
+              hidden
+            >
+              <p class="stacked-charts__label">
+                Relative humidity, precip chance, sky cover (%)
+              </p>
+              <div class="stacked-charts__canvas-wrap">
+                <canvas id="chart-panel-c" aria-label="Humidity and sky chart"></canvas>
+              </div>
+            </div>
+            <div
+              class="stacked-charts__panel stacked-charts__panel--wx"
+              id="wrap-panel-d"
+              hidden
+            >
+              <p class="stacked-charts__label">Rain and thunder</p>
+              <div class="stacked-charts__canvas-wrap">
+                <canvas id="chart-panel-d" aria-label="Rain and thunder chart"></canvas>
+              </div>
+            </div>
+            <div
+              class="stacked-charts__panel stacked-charts__panel--ice"
+              id="wrap-panel-e"
+              hidden
+            >
+              <p class="stacked-charts__label">Snow, freezing rain, sleet</p>
+              <div class="stacked-charts__canvas-wrap stacked-charts__canvas-wrap--tallx">
+                <canvas id="chart-panel-e" aria-label="Winter precipitation chart"></canvas>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -110,7 +166,10 @@
       </p>
     </footer>
 
+    <script src="js/vendor/suncalc.js"></script>
     <script src="js/vendor/chart.umd.min.js" defer></script>
+    <script src="js/gridSeries.js" defer></script>
+    <script src="js/chartPlugins.js" defer></script>
     <script src="js/app.js" defer></script>
   </body>
 </html>
