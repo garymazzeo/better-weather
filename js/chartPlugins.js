@@ -75,8 +75,9 @@
         if (!chartArea || !xScale) return;
 
         var n = chart.data.labels.length;
-        var night = "rgba(148, 163, 184, 0.35)";
-        var day = "rgba(255, 255, 255, 0.92)";
+        /* Dark chart panels: deeper night wash, slightly lifted day band */
+        var night = "rgba(15, 23, 42, 0.55)";
+        var day = "rgba(71, 85, 105, 0.28)";
 
         ctx.save();
         for (var i = 0; i < n - 1; i++) {
@@ -131,8 +132,8 @@
         var last = "";
         ctx.save();
         ctx.font =
-          '600 11px system-ui, "Outfit", "Segoe UI", sans-serif';
-        ctx.fillStyle = "#334155";
+          '600 12px system-ui, "Outfit", "Segoe UI", sans-serif';
+        ctx.fillStyle = "#cbd5e1";
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
 
@@ -159,9 +160,99 @@
     };
   }
 
+  /**
+   * Hourly wind vectors: anchored at the wind-speed point on the line; stem extends downstream
+   * (NWS windDirection = FROM). Thin line + strokes near tip ~12 mph each (no arrowhead).
+   */
+  function createWindVectorPlugin(hourStarts, windDirectionFromDeg, windMph, windSpeedDatasetIndex) {
+    windSpeedDatasetIndex = windSpeedDatasetIndex == null ? 0 : windSpeedDatasetIndex;
+    return {
+      id: "betterWeatherWindVectors",
+      afterDatasetsDraw: function (chart) {
+        if (!hourStarts || !hourStarts.length) return;
+        if (!windDirectionFromDeg || !windDirectionFromDeg.length) return;
+        var ctx = chart.ctx;
+        var area = chart.chartArea;
+        var yScale = chart.scales.y;
+        if (!ctx || !area || !yScale) return;
+
+        var metaSpeed = chart.getDatasetMeta(windSpeedDatasetIndex);
+        if (!metaSpeed || metaSpeed.hidden || !metaSpeed.data) return;
+
+        var n = hourStarts.length;
+        var mphMax = isFinite(yScale.max) ? yScale.max : 40;
+        if (mphMax <= 0) mphMax = 40;
+
+        var DEG = Math.PI / 180;
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(203, 213, 225, 0.78)";
+        ctx.lineWidth = 1;
+        ctx.lineJoin = "round";
+        ctx.lineCap = "round";
+
+        for (var i = 0; i < n; i++) {
+          var dir = windDirectionFromDeg[i];
+          if (dir == null || isNaN(dir)) continue;
+          var mph = windMph[i];
+          if (mph == null || isNaN(mph) || mph <= 0) continue;
+
+          var pt = metaSpeed.data[i];
+          if (!pt || typeof pt.x !== "number" || typeof pt.y !== "number") continue;
+          var anchorX = pt.x;
+          var anchorY = pt.y;
+          if (anchorX < area.left - 2 || anchorX > area.right + 2) continue;
+          if (anchorY < area.top - 2 || anchorY > area.bottom + 2) continue;
+
+          var rad = Number(dir) * DEG;
+          var ux = -Math.sin(rad);
+          var uy = Math.cos(rad);
+          var px = -uy;
+          var py = ux;
+
+          var len = 6 + Math.min(mph / Math.max(mphMax, 8), 1) * 20;
+          len = Math.min(len, 26);
+
+          var x0 = anchorX;
+          var y0 = anchorY;
+          var x1 = anchorX + ux * len;
+          var y1 = anchorY + uy * len;
+
+          var maxY = area.top + 2;
+          if (y1 < maxY) {
+            var scale = (anchorY - maxY) / (anchorY - y1);
+            if (scale > 0 && scale < 1) {
+              x1 = anchorX + ux * len * scale;
+              y1 = anchorY + uy * len * scale;
+            }
+          }
+
+          ctx.beginPath();
+          ctx.moveTo(x0, y0);
+          ctx.lineTo(x1, y1);
+          ctx.stroke();
+
+          var k = Math.min(6, Math.floor(mph / 12));
+          var tickLen = 4;
+          for (var t = 1; t <= k; t++) {
+            var back = 3 + t * 3;
+            var tx = x1 - ux * back;
+            var ty = y1 - uy * back;
+            ctx.beginPath();
+            ctx.moveTo(tx, ty);
+            ctx.lineTo(tx + px * tickLen, ty + py * tickLen);
+            ctx.stroke();
+          }
+        }
+        ctx.restore();
+      },
+    };
+  }
+
   global.BetterWeatherChartPlugins = {
     createDayNightBackgroundPlugin: createDayNightBackgroundPlugin,
     createDateStripPlugin: createDateStripPlugin,
+    createWindVectorPlugin: createWindVectorPlugin,
     isSunUp: isSunUp,
   };
 })(typeof window !== "undefined" ? window : this);

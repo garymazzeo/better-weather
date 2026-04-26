@@ -1,4 +1,4 @@
-/* Better Weather — minimal, readable, scroll-friendly */
+/* Better Weather — dark brand, chart instrument well, scroll affordances */
 
 :root {
   --bg: #0c1118;
@@ -6,12 +6,18 @@
   --border: rgba(255, 255, 255, 0.08);
   --text: #e8edf4;
   --text-muted: #94a3b8;
-  --accent: #38bdf8;
-  --accent-soft: rgba(56, 189, 248, 0.15);
+  /* Muted amber-gold accent (less “default cyan AI”) */
+  --accent: #c9a227;
+  --accent-muted: rgba(201, 162, 39, 0.45);
+  --accent-soft: rgba(201, 162, 39, 0.14);
   --danger: #f87171;
   --radius: 12px;
   --font: "Outfit", system-ui, sans-serif;
   --shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --chart-surface: #1a2332;
+  --chart-surface-raised: #243047;
+  --chart-well-bg: #0f141d;
+  --chart-border-inner: rgba(201, 162, 39, 0.22);
 }
 
 *,
@@ -36,6 +42,10 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  .chart-skeleton__row::after {
+    animation: none !important;
+  }
 }
 
 body {
@@ -45,7 +55,7 @@ body {
   font-size: 1rem;
   line-height: 1.5;
   color: var(--text);
-  background: radial-gradient(1200px 600px at 10% -10%, #1e3a5f 0%, transparent 55%),
+  background: radial-gradient(1200px 600px at 10% -10%, #1e2a3d 0%, transparent 55%),
     radial-gradient(900px 500px at 90% 0%, #0f172a 0%, transparent 50%), var(--bg);
   background-attachment: fixed;
 }
@@ -73,6 +83,114 @@ body {
 .site-header__inner {
   max-width: 960px;
   margin: 0 auto;
+}
+
+.site-header__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+  margin-top: 1rem;
+}
+
+.site-header__brand {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.site-location-bar {
+  flex: 1 1 14rem;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.site-location-bar__text {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: right;
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+}
+
+.btn--compact {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.location-dialog {
+  width: min(100vw - 2rem, 26rem);
+  max-width: 100%;
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.location-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.location-dialog__inner {
+  padding: 1.25rem 1.25rem 1.35rem;
+}
+
+.location-dialog__title {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.location-dialog__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.location-dialog__or {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.location-dialog .coords-form {
+  margin-bottom: 0.65rem;
+}
+
+.location-dialog .hint {
+  margin: 0;
+}
+
+.location-panel--hero {
+  margin-bottom: 1.25rem;
+}
+
+.location-readout--hero {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+  color: var(--accent);
+  min-height: 1.5em;
 }
 
 .site-title {
@@ -184,7 +302,7 @@ body {
 }
 
 .btn--primary:hover:not(:disabled) {
-  filter: brightness(1.05);
+  filter: brightness(1.08);
 }
 
 .btn--secondary {
@@ -195,7 +313,7 @@ body {
 
 .btn--secondary:hover:not(:disabled) {
   background: var(--accent-soft);
-  border-color: rgba(56, 189, 248, 0.35);
+  border-color: var(--accent-muted);
 }
 
 .hint {
@@ -205,12 +323,6 @@ body {
   max-width: 42rem;
 }
 
-.location-readout {
-  margin: 0.75rem 0 0;
-  font-size: 0.95rem;
-  color: var(--accent);
-  min-height: 1.5em;
-}
 
 .status-banner {
   padding: 0.75rem 1rem;
@@ -222,7 +334,7 @@ body {
 
 .status-banner--loading {
   background: var(--accent-soft);
-  border-color: rgba(56, 189, 248, 0.25);
+  border-color: var(--accent-muted);
 }
 
 .status-banner--error {
@@ -235,33 +347,162 @@ body {
   overflow: hidden;
 }
 
+/* Skeleton loading */
+.chart-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.chart-skeleton__row {
+  position: relative;
+  border-radius: 8px;
+  background: var(--chart-surface);
+  border: 1px solid var(--chart-border-inner);
+  overflow: hidden;
+}
+
+.chart-skeleton__row::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: chart-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes chart-skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.chart-skeleton__row--temp {
+  height: 226px;
+}
+
+.chart-skeleton__row--wind {
+  height: 196px;
+}
+
+.chart-skeleton__row--humidity {
+  height: 216px;
+}
+
+.chart-skeleton__row--wx,
+.chart-skeleton__row--ice {
+  height: 166px;
+}
+
+/* Instrument well: cohesive dark frame for charts */
+.chart-well {
+  background: var(--chart-well-bg);
+  border: 1px solid var(--chart-border-inner);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem 0.85rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.chart-scroll-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.78rem;
+  color: var(--accent-muted);
+  letter-spacing: 0.02em;
+}
+
+.stacked-charts-scroll-outer {
+  position: relative;
+  border-radius: 8px;
+}
+
+/* Fade cue: more content to the right */
+.stacked-charts-scroll-outer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+  border-radius: 0 8px 8px 0;
+  background: linear-gradient(
+    to left,
+    var(--chart-well-bg) 0%,
+    rgba(15, 20, 29, 0) 100%
+  );
+  z-index: 1;
+}
+
 .stacked-charts-scroll {
   overflow-x: auto;
   overflow-y: hidden;
-  margin: 0 -0.25rem;
-  padding: 0 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0 0 0.5rem;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-muted) var(--chart-surface);
+}
+
+.stacked-charts-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.stacked-charts-scroll::-webkit-scrollbar-track {
+  background: var(--chart-surface);
+  border-radius: 4px;
+}
+
+.stacked-charts-scroll::-webkit-scrollbar-thumb {
+  background: var(--accent-muted);
+  border-radius: 4px;
 }
 
 .stacked-charts-scroll:focus-visible {
   outline: 2px solid var(--accent);
-  outline-offset: 4px;
+  outline-offset: 2px;
 }
 
 .stacked-charts {
-  min-width: min(920px, 145vw);
+  min-width: var(--chart-plot-min-width, min(920px, 145vw));
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
 }
 
 .stacked-charts__panel {
-  background: #f8fafc;
-  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: var(--chart-surface);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 8px;
   padding: 0.5rem 0.65rem 0.35rem;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.stacked-charts__head {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 4;
+  margin: -0.5rem -0.65rem 0.4rem;
+  padding: 0.5rem 0.65rem 0.45rem;
+  background: linear-gradient(
+      to bottom,
+      rgba(26, 35, 50, 0.98) 0%,
+      rgba(26, 35, 50, 0.92) 55%,
+      rgba(26, 35, 50, 0) 100%
+    ),
+    var(--chart-surface);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .stacked-charts__label {
@@ -269,8 +510,41 @@ body {
   font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #475569;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.stacked-charts__legend-items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+}
+
+.stacked-charts__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.stacked-charts__legend-swatch {
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stacked-charts__legend-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .stacked-charts__canvas-wrap {
@@ -310,28 +584,87 @@ body {
 }
 
 .period-card {
-  flex: 0 0 min(220px, 78vw);
+  flex: 0 0 min(240px, 82vw);
   scroll-snap-align: start;
-  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0.85rem 1rem;
-  min-height: 7rem;
+  min-height: 7.5rem;
+  background: var(--bg);
+}
+
+.period-card--day {
+  background: linear-gradient(
+      145deg,
+      rgba(201, 162, 39, 0.14) 0%,
+      rgba(12, 17, 24, 0.92) 48%,
+      var(--bg) 100%
+    ),
+    var(--bg);
+}
+
+.period-card--night {
+  background: linear-gradient(
+      145deg,
+      rgba(99, 102, 241, 0.18) 0%,
+      rgba(30, 27, 75, 0.35) 42%,
+      var(--bg) 100%
+    ),
+    var(--bg);
+}
+
+.period-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.35rem;
+}
+
+.period-card__icon-wrap {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--accent);
+}
+
+.period-card__icon-wrap svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.period-card__head-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .period-card__name {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.2rem;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  line-height: 1.25;
+}
+
+.period-card__temp-row {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
 }
 
 .period-card__temp {
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 1.35rem;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .period-card__short {
