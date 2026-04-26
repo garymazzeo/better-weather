@@ -21,49 +21,62 @@
 
     <header class="site-header">
       <div class="site-header__inner">
-        <h1 class="site-title">Better Weather</h1>
-        <p class="site-tagline">National Weather Service · grid forecast · ~7 days</p>
+        <div class="site-header__row">
+          <div class="site-header__brand">
+            <h1 class="site-title">Better Weather</h1>
+            <p class="site-tagline">National Weather Service · grid forecast · ~7 days</p>
+          </div>
+          <div class="site-location-bar" id="site-location-bar" hidden>
+            <p class="site-location-bar__text" id="location-summary">Set your location</p>
+            <button
+              type="button"
+              class="btn btn--secondary btn--compact"
+              id="btn-change-location"
+              aria-haspopup="dialog"
+            >
+              Change
+            </button>
+          </div>
+        </div>
       </div>
     </header>
 
-    <main id="main" class="main">
-      <section class="panel location-panel" aria-labelledby="location-heading">
-        <h2 id="location-heading" class="panel__title">Location</h2>
-        <div class="location-actions">
-          <button type="button" class="btn btn--primary" id="btn-geolocate">
-            Use my location
-          </button>
-          <span class="location-actions__or" aria-hidden="true">or</span>
-          <form class="coords-form" id="form-coords" novalidate>
-            <label class="sr-only" for="input-lat">Latitude</label>
-            <input
-              id="input-lat"
-              name="lat"
-              type="text"
-              inputmode="decimal"
-              placeholder="Latitude"
-              autocomplete="off"
-              aria-describedby="coords-hint"
-            />
-            <label class="sr-only" for="input-lon">Longitude</label>
-            <input
-              id="input-lon"
-              name="lon"
-              type="text"
-              inputmode="decimal"
-              placeholder="Longitude"
-              autocomplete="off"
-            />
-            <button type="submit" class="btn btn--secondary">Load forecast</button>
-          </form>
+    <dialog class="location-dialog" id="location-dialog" aria-labelledby="location-dialog-title">
+      <div class="location-dialog__inner">
+        <h2 class="location-dialog__title" id="location-dialog-title">Location</h2>
+        <div class="location-dialog__actions">
+          <button type="button" class="btn btn--primary" id="btn-geolocate">Use my location</button>
+          <span class="location-dialog__or" aria-hidden="true">or</span>
         </div>
+        <form class="coords-form" id="form-coords" novalidate>
+          <label class="sr-only" for="input-lat">Latitude</label>
+          <input
+            id="input-lat"
+            name="lat"
+            type="text"
+            inputmode="decimal"
+            placeholder="Latitude"
+            autocomplete="off"
+            aria-describedby="coords-hint"
+          />
+          <label class="sr-only" for="input-lon">Longitude</label>
+          <input
+            id="input-lon"
+            name="lon"
+            type="text"
+            inputmode="decimal"
+            placeholder="Longitude"
+            autocomplete="off"
+          />
+          <button type="submit" class="btn btn--secondary" id="btn-load-coords">Load forecast</button>
+        </form>
         <p id="coords-hint" class="hint">
-          Coordinates use WGS84 (decimal degrees). Geolocation needs a secure
-          (HTTPS) context in most browsers.
+          WGS84 decimal degrees. Geolocation needs HTTPS in most browsers.
         </p>
-        <p class="location-readout" id="location-readout" aria-live="polite"></p>
-      </section>
+      </div>
+    </dialog>
 
+    <main id="main" class="main">
       <div
         class="status-banner"
         id="status-banner"
@@ -71,6 +84,49 @@
         aria-live="polite"
         hidden
       ></div>
+
+      <section
+        class="panel location-panel location-panel--hero"
+        aria-labelledby="location-hero-heading"
+        id="section-location-hero"
+      >
+        <h2 id="location-hero-heading" class="panel__title">Location</h2>
+        <div class="location-actions">
+          <button type="button" class="btn btn--primary" id="btn-geolocate-hero">
+            Use my location
+          </button>
+          <span class="location-actions__or" aria-hidden="true">or</span>
+          <form class="coords-form" id="form-coords-hero" novalidate>
+            <label class="sr-only" for="input-lat-hero">Latitude</label>
+            <input
+              id="input-lat-hero"
+              name="lat"
+              type="text"
+              inputmode="decimal"
+              placeholder="Latitude"
+              autocomplete="off"
+              aria-describedby="coords-hint-hero"
+            />
+            <label class="sr-only" for="input-lon-hero">Longitude</label>
+            <input
+              id="input-lon-hero"
+              name="lon"
+              type="text"
+              inputmode="decimal"
+              placeholder="Longitude"
+              autocomplete="off"
+            />
+            <button type="submit" class="btn btn--secondary" id="btn-load-coords-hero">
+              Load forecast
+            </button>
+          </form>
+        </div>
+        <p id="coords-hint-hero" class="hint">
+          Coordinates use WGS84 (decimal degrees). Geolocation needs a secure (HTTPS) context in
+          most browsers.
+        </p>
+        <p class="location-readout location-readout--hero" id="location-readout-hero" aria-live="polite"></p>
+      </section>
 
       <section
         class="panel chart-stack-panel"
@@ -82,63 +138,98 @@
           <h2 id="chart-heading" class="panel__title">Hourly grid forecast</h2>
           <p class="panel__sub" id="chart-subtitle"></p>
         </div>
-        <div
-          class="stacked-charts-scroll"
-          tabindex="0"
-          role="region"
-          aria-label="Hourly forecast charts, scroll horizontally"
-        >
-          <div class="stacked-charts" id="stacked-charts">
+
+        <div id="chart-skeleton" class="chart-skeleton" hidden>
+          <div class="chart-skeleton__row chart-skeleton__row--temp" aria-hidden="true"></div>
+          <div class="chart-skeleton__row chart-skeleton__row--wind" aria-hidden="true"></div>
+          <div class="chart-skeleton__row chart-skeleton__row--humidity" aria-hidden="true"></div>
+          <div class="chart-skeleton__row chart-skeleton__row--wx" aria-hidden="true"></div>
+          <div class="chart-skeleton__row chart-skeleton__row--ice" aria-hidden="true"></div>
+        </div>
+
+        <div class="chart-well" id="chart-well" hidden>
+          <p class="chart-scroll-hint" id="chart-scroll-hint">
+            Scroll sideways for the full timeline
+          </p>
+          <div class="stacked-charts-scroll-outer">
             <div
-              class="stacked-charts__panel stacked-charts__panel--temp"
-              id="wrap-panel-a"
-              hidden
+              class="stacked-charts-scroll"
+              id="stacked-charts-scroll"
+              tabindex="0"
+              role="region"
+              aria-label="Hourly forecast charts"
+              aria-describedby="chart-scroll-hint"
             >
-              <p class="stacked-charts__label">Temperature, dewpoint, wind chill (°F)</p>
-              <div class="stacked-charts__canvas-wrap">
-                <canvas id="chart-panel-a" aria-label="Temperature chart"></canvas>
-              </div>
-            </div>
-            <div
-              class="stacked-charts__panel stacked-charts__panel--wind"
-              id="wrap-panel-b"
-              hidden
-            >
-              <p class="stacked-charts__label">Wind speed and gusts (mph)</p>
-              <div class="stacked-charts__canvas-wrap">
-                <canvas id="chart-panel-b" aria-label="Wind chart"></canvas>
-              </div>
-            </div>
-            <div
-              class="stacked-charts__panel stacked-charts__panel--humidity"
-              id="wrap-panel-c"
-              hidden
-            >
-              <p class="stacked-charts__label">
-                Relative humidity, precip chance, sky cover (%)
-              </p>
-              <div class="stacked-charts__canvas-wrap">
-                <canvas id="chart-panel-c" aria-label="Humidity and sky chart"></canvas>
-              </div>
-            </div>
-            <div
-              class="stacked-charts__panel stacked-charts__panel--wx"
-              id="wrap-panel-d"
-              hidden
-            >
-              <p class="stacked-charts__label">Rain and thunder</p>
-              <div class="stacked-charts__canvas-wrap">
-                <canvas id="chart-panel-d" aria-label="Rain and thunder chart"></canvas>
-              </div>
-            </div>
-            <div
-              class="stacked-charts__panel stacked-charts__panel--ice"
-              id="wrap-panel-e"
-              hidden
-            >
-              <p class="stacked-charts__label">Snow, freezing rain, sleet</p>
-              <div class="stacked-charts__canvas-wrap stacked-charts__canvas-wrap--tallx">
-                <canvas id="chart-panel-e" aria-label="Winter precipitation chart"></canvas>
+              <div class="stacked-charts" id="stacked-charts">
+                <div
+                  class="stacked-charts__panel stacked-charts__panel--temp"
+                  id="wrap-panel-a"
+                  hidden
+                >
+                  <div class="stacked-charts__head">
+                    <p class="stacked-charts__label">Temperature, dewpoint, wind chill (°F)</p>
+                    <ul class="stacked-charts__legend-items" id="legend-panel-a"></ul>
+                  </div>
+                  <div class="stacked-charts__canvas-wrap">
+                    <canvas id="chart-panel-a" aria-label="Temperature chart"></canvas>
+                  </div>
+                </div>
+                <div
+                  class="stacked-charts__panel stacked-charts__panel--wind"
+                  id="wrap-panel-b"
+                  hidden
+                >
+                  <div class="stacked-charts__head">
+                    <p class="stacked-charts__label">
+                      Wind speed & gusts (mph) · hourly wind lines (direction blows; strokes ~12 mph)
+                    </p>
+                    <ul class="stacked-charts__legend-items" id="legend-panel-b"></ul>
+                  </div>
+                  <div class="stacked-charts__canvas-wrap">
+                    <canvas id="chart-panel-b" aria-label="Wind chart"></canvas>
+                  </div>
+                </div>
+                <div
+                  class="stacked-charts__panel stacked-charts__panel--humidity"
+                  id="wrap-panel-c"
+                  hidden
+                >
+                  <div class="stacked-charts__head">
+                    <p class="stacked-charts__label">
+                      Relative humidity, precip chance, sky cover (%)
+                    </p>
+                    <ul class="stacked-charts__legend-items" id="legend-panel-c"></ul>
+                  </div>
+                  <div class="stacked-charts__canvas-wrap">
+                    <canvas id="chart-panel-c" aria-label="Humidity and sky chart"></canvas>
+                  </div>
+                </div>
+                <div
+                  class="stacked-charts__panel stacked-charts__panel--wx"
+                  id="wrap-panel-d"
+                  hidden
+                >
+                  <div class="stacked-charts__head">
+                    <p class="stacked-charts__label" id="label-panel-d">Rain and thunder</p>
+                    <ul class="stacked-charts__legend-items" id="legend-panel-d"></ul>
+                  </div>
+                  <div class="stacked-charts__canvas-wrap">
+                    <canvas id="chart-panel-d" aria-label="Rain and thunder chart"></canvas>
+                  </div>
+                </div>
+                <div
+                  class="stacked-charts__panel stacked-charts__panel--ice"
+                  id="wrap-panel-e"
+                  hidden
+                >
+                  <div class="stacked-charts__head">
+                    <p class="stacked-charts__label">Snow, freezing rain, sleet</p>
+                    <ul class="stacked-charts__legend-items" id="legend-panel-e"></ul>
+                  </div>
+                  <div class="stacked-charts__canvas-wrap stacked-charts__canvas-wrap--tallx">
+                    <canvas id="chart-panel-e" aria-label="Winter precipitation chart"></canvas>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

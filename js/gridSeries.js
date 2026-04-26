@@ -206,11 +206,13 @@
       "dewpoint",
       "windChill",
       "windSpeed",
+      "windDirection",
       "windGust",
       "relativeHumidity",
       "probabilityOfPrecipitation",
       "skyCover",
       "probabilityOfThunder",
+      "quantitativePrecipitation",
     ];
 
     var minStart = Infinity;
@@ -244,12 +246,14 @@
         dewpointF: [],
         windChillF: [],
         windMph: [],
+        windDirectionDeg: [],
         gustMph: [],
         relativeHumidity: [],
         pop: [],
         skyCover: [],
         thunderPct: [],
         weather: [],
+        quantitativePrecipitationInches: [],
         updateTime: props.updateTime || null,
       };
     }
@@ -293,6 +297,13 @@
       rangeEnd,
       id
     );
+    var windDirectionDeg = alignNumericSeries(
+      layerValues(props, "windDirection"),
+      hourStarts,
+      rangeStart,
+      rangeEnd,
+      id
+    );
     var gustKmh = alignNumericSeries(
       layerValues(props, "windGust"),
       hourStarts,
@@ -331,6 +342,23 @@
 
     var weather = alignWeatherSeries(wvals, hourStarts, rangeStart, rangeEnd);
 
+    var qpfLayerMeta = props.quantitativePrecipitation;
+    var qpfUom = (qpfLayerMeta && qpfLayerMeta.uom && String(qpfLayerMeta.uom)) || "";
+    function qpfToInches(v) {
+      if (v == null || typeof v !== "number" || isNaN(v)) return null;
+      var u = qpfUom.toLowerCase();
+      if (u.indexOf("mm") >= 0) return v / 25.4;
+      if (u.indexOf("m") >= 0 && u.indexOf("mm") < 0) return v * 39.3700787;
+      return v;
+    }
+    var quantitativePrecipitationInches = alignNumericSeries(
+      layerValues(props, "quantitativePrecipitation"),
+      hourStarts,
+      rangeStart,
+      rangeEnd,
+      qpfToInches
+    );
+
     var temperatureF = tempC.map(cToF);
     var dewpointF = dewC.map(cToF);
     var windChillF = wcC.map(cToF);
@@ -344,12 +372,14 @@
       dewpointF: dewpointF,
       windChillF: windChillF,
       windMph: windMph,
+      windDirectionDeg: windDirectionDeg,
       gustMph: gustMph,
       relativeHumidity: rh,
       pop: pop,
       skyCover: sky,
       thunderPct: thunder,
       weather: weather,
+      quantitativePrecipitationInches: quantitativePrecipitationInches,
       updateTime: props.updateTime || null,
       rangeStartMs: rangeStart,
       rangeEndMs: rangeEnd,
