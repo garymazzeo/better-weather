@@ -1,0 +1,105 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup SSH
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+        run: |
+          install -dm 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          if [ -n "$VPS_HOST" ]; then
+            ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          fi
+
+      - name: Verify VPS access and permissions
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o PreferredAuthentications=publickey \
+            -o PasswordAuthentication=no \
+            -o StrictHostKeyChecking=yes \
+            "${VPS_USER}@${VPS_HOST}" \
+            "test -d \"${VPS_DEPLOY_PATH}\" || (mkdir -p \"${VPS_DEPLOY_PATH}\" && echo 'Directory created') && \
+             test -w \"${VPS_DEPLOY_PATH}\" && echo 'Directory is writable' || (echo 'ERROR: Directory is not writable' && exit 1)"
+
+      - name: Create deployment package
+        run: |
+          mkdir -p deploy
+          rsync -av \
+            --exclude='.git' \
+            --exclude='config.php' \
+            --exclude='.gitignore' \
+            --exclude='.github' \
+            --exclude='*.md' \
+            --exclude='cron/log.txt' \
+            ./ deploy/
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o PreferredAuthentications=publickey \
+            -o PasswordAuthentication=no \
+            -o StrictHostKeyChecking=yes \
+            "${VPS_USER}@${VPS_HOST}" \
+            "if [ -d \"${VPS_DEPLOY_PATH}\" ] && [ \"\$(ls -A \"${VPS_DEPLOY_PATH}\" 2>/dev/null)\" ]; then \
+              cd \"${VPS_DEPLOY_PATH}\" && \
+              tar -czf \"../backup-\$(date +%Y%m%d-%H%M%S).tar.gz\" . 2>/dev/null && \
+              echo 'Backup created'; \
+            else \
+              echo 'No existing files to backup'; \
+            fi"
+
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o PreferredAuthentications=publickey -o PasswordAuthentication=no -o StrictHostKeyChecking=yes" \
+            deploy/ \
+            "${VPS_USER}@${VPS_HOST}:${VPS_DEPLOY_PATH}/"
+
+      - name: Set permissions
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_DEPLOY_PATH: ${{ secrets.VPS_DEPLOY_PATH }}
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o PreferredAuthentications=publickey \
+            -o PasswordAuthentication=no \
+            -o StrictHostKeyChecking=yes \
+            "${VPS_USER}@${VPS_HOST}" \
+            "cd \"${VPS_DEPLOY_PATH}\" && \
+             find . -type f -name '*.php' -exec chmod 644 {} \\; && \
+             find . -type d -exec chmod 755 {} \\; && \
+             echo 'Permissions set successfully'"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -rf deploy
+          rm -f ~/.ssh/deploy_key
