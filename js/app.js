@@ -63,30 +63,74 @@
     }
   }
 
-  function apiPoints(lat, lon) {
-    var q =
-      "lat=" + encodeURIComponent(String(lat)) + "&lon=" + encodeURIComponent(String(lon));
-    return fetch("/api/points.php?" + q).then(function (res) {
-      return res.json().then(function (data) {
-        if (!res.ok) {
-          var err = (data && data.error) || res.statusText || "Request failed";
-          throw new Error(err);
-        }
-        return data;
+  /** Resolve PHP API path against this page so subpath deploys (e.g. /better-weather/) work. */
+  function apiUrl(pathWithQuery) {
+    try {
+      return new URL(pathWithQuery, location.href).href;
+    } catch (e) {
+      return pathWithQuery;
+    }
+  }
+
+  function apiFetchJson(url, debugLabel) {
+    return fetch(url).then(function (res) {
+      return res.clone().text().then(function (bodyText) {
+        // #region agent log
+        fetch("http://127.0.0.1:7348/ingest/309338f3-0722-4b00-b49f-901c7ac3ea8d", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "9a40ac",
+          },
+          body: JSON.stringify({
+            sessionId: "9a40ac",
+            location: "js/app.js:apiFetchJson",
+            message: "API response before res.json",
+            data: {
+              debugLabel: debugLabel,
+              pageHref: typeof location !== "undefined" ? location.href : "",
+              resolvedUrl: (function () {
+                try {
+                  return new URL(url, location.href).href;
+                } catch (e) {
+                  return url;
+                }
+              })(),
+              status: res.status,
+              ok: res.ok,
+              contentType: res.headers.get("content-type"),
+              bodyLength: bodyText.length,
+              firstCharCode: bodyText.length ? bodyText.charCodeAt(0) : null,
+              looksLikeHtml: /^[\s]*</.test(bodyText),
+              preview: bodyText.slice(0, 220),
+            },
+            timestamp: Date.now(),
+            hypothesisId: "H1-H5",
+          }),
+        }).catch(function () {});
+        // #endregion
+        return res.json().then(function (data) {
+          if (!res.ok) {
+            var err = (data && data.error) || res.statusText || "Request failed";
+            throw new Error(err);
+          }
+          return data;
+        });
       });
     });
   }
 
+  function apiPoints(lat, lon) {
+    var q =
+      "lat=" + encodeURIComponent(String(lat)) + "&lon=" + encodeURIComponent(String(lon));
+    return apiFetchJson(apiUrl("api/points.php?" + q), "points");
+  }
+
   function apiNws(url) {
-    return fetch("/api/nws.php?url=" + encodeURIComponent(url)).then(function (res) {
-      return res.json().then(function (data) {
-        if (!res.ok) {
-          var err = (data && data.error) || res.statusText || "Request failed";
-          throw new Error(err);
-        }
-        return data;
-      });
-    });
+    return apiFetchJson(
+      apiUrl("api/nws.php?url=" + encodeURIComponent(url)),
+      "nws"
+    );
   }
 
   function formatShortTime(iso) {
