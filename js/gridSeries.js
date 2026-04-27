@@ -260,6 +260,13 @@
 
     var rangeStart = floorToHour(minStart);
     var rangeEnd = ceilToHour(maxEnd);
+
+    // Clamp the displayed timeline to start at the user's current hour (when within range).
+    var nowFloorHour = floorToHour(Date.now());
+    if (nowFloorHour > rangeStart && nowFloorHour < rangeEnd) {
+      rangeStart = nowFloorHour;
+    }
+
     var hourStarts = [];
     for (var t = rangeStart; t < rangeEnd; t += 3600000) {
       hourStarts.push(t);
