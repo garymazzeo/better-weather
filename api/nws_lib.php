@@ -17,7 +17,6 @@ function better_weather_nws_request(string $url): array
     }
 
     $ch = curl_init($url);
-    $curlErr = '';
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
@@ -29,31 +28,9 @@ function better_weather_nws_request(string $url): array
     ]);
 
     $body = curl_exec($ch);
-    if ($body === false) {
-        $curlErr = (string) curl_error($ch);
-    }
     $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $ctype = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     curl_close($ch);
-
-    // Minimal debug logging to Cursor NDJSON file (no secrets).
-    // This stays until we confirm the fix with runtime logs.
-    $logPath = __DIR__ . '/../.cursor/debug-b93505.log';
-    @file_put_contents($logPath, json_encode([
-        'sessionId' => 'b93505',
-        'runId' => 'pre-fix',
-        'hypothesisId' => 'H1',
-        'location' => 'api/nws_lib.php:better_weather_nws_request',
-        'message' => 'NWS proxy response',
-        'data' => [
-            'url' => $url,
-            'status' => $status,
-            'content_type' => $ctype,
-            'curl_error' => $curlErr !== '' ? $curlErr : null,
-            'body_prefix' => is_string($body) ? substr($body, 0, 180) : null,
-        ],
-        'timestamp' => (int) floor(microtime(true) * 1000),
-    ], JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND);
 
     if ($body === false) {
         return ['ok' => false, 'status' => 502, 'body' => '', 'content_type' => null];

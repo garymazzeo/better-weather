@@ -73,40 +73,24 @@
   }
 
   function apiFetchJson(url, debugLabel) {
-    return fetch(url)
-      .then(function (res) {
-        return res.json().then(function (data) {
-        // #region agent log
-        fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H1',location:'js/app.js:apiFetchJson',message:'API response',data:{debugLabel:String(debugLabel||''),url:String(url||''),status:res.status,ok:res.ok,error:(data&&data.error)||null,hasData:!!data},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion agent log
+    return fetch(url).then(function (res) {
+      return res.json().then(function (data) {
         if (!res.ok) {
           var err = (data && data.error) || res.statusText || "Request failed";
           throw new Error(err);
         }
         return data;
-        });
-      })
-      .catch(function (err) {
-        // #region agent log
-        fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H3',location:'js/app.js:apiFetchJson',message:'API fetch failed',data:{debugLabel:String(debugLabel||''),url:String(url||''),errorName:String((err&&err.name)||''),errorMessage:String((err&&err.message)||'')},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion agent log
-        throw err;
       });
+    });
   }
 
   function apiPoints(lat, lon) {
     var q =
       "lat=" + encodeURIComponent(String(lat)) + "&lon=" + encodeURIComponent(String(lon));
-    // #region agent log
-    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H2',location:'js/app.js:apiPoints',message:'Calling points proxy',data:{lat:Number(lat),lon:Number(lon),url:apiUrl("api/points.php?" + q)},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
     return apiFetchJson(apiUrl("api/points.php?" + q), "points");
   }
 
   function apiNws(url) {
-    // #region agent log
-    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H3',location:'js/app.js:apiNws',message:'Calling NWS proxy',data:{upstreamUrl:String(url||''),proxyUrl:apiUrl("api/nws.php?url=" + encodeURIComponent(url))},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
     return apiFetchJson(
       apiUrl("api/nws.php?url=" + encodeURIComponent(url)),
       "nws"
@@ -1165,6 +1149,65 @@
     return "";
   }
 
+  function afdNormName(n) {
+    return String(n)
+      .toUpperCase()
+      .replace(/[^A-Z0-9]+/g, " ")
+      .trim();
+  }
+
+  function afdIsOmittedSectionName(n) {
+    var k = afdNormName(n);
+    return (
+      k === "AVIATION" ||
+      k.indexOf("AVIATION") === 0 ||
+      k === "MARINE" ||
+      k.indexOf("MARINE") === 0 ||
+      k === "WATERCRAFT" ||
+      k.indexOf("WATERCRAFT") === 0 ||
+      k === "COASTAL WATERS" ||
+      k.indexOf("COASTAL WATERS") === 0
+    );
+  }
+
+  /** Embedded sub-headers inside a section (e.g. MARINE... under PREV DISCUSSION). */
+  function afdIsEmbeddedOmittedHeader(line) {
+    var t = String(line || "").trim();
+    if (!t) return false;
+    var m = t.match(/^\.?([A-Z][A-Z0-9 /-]{1,42})\.{2,3}\s*$/);
+    if (!m) return false;
+    return afdIsOmittedSectionName(m[1]);
+  }
+
+  function cleanAfdSectionBody(bodyLines) {
+    var lines = bodyLines.slice();
+
+    for (var i = 0; i < lines.length; i++) {
+      if (afdIsEmbeddedOmittedHeader(lines[i])) {
+        lines = lines.slice(0, i);
+        break;
+      }
+    }
+
+    for (var j = 0; j < lines.length; j++) {
+      if (String(lines[j]).trim() === "$$") {
+        lines = lines.slice(0, j);
+        break;
+      }
+    }
+
+    while (lines.length) {
+      var last = String(lines[lines.length - 1]).trim();
+      if (last === "" || last === "&&" || last === "$$") {
+        lines.pop();
+        continue;
+      }
+      break;
+    }
+
+    return lines.join("\n").trim();
+  }
+
   function parseAfdSections(productText) {
     var raw = String(productText || "");
     if (!raw.trim()) return [];
@@ -1174,10 +1217,6 @@
     var sectionStarts = [];
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i];
-      // Typical AFD headers look like:
-      // .SYNOPSIS...
-      // .NEAR TERM /THROUGH TONIGHT/...
-      // .LONG TERM...(SUNDAY THROUGH WEDNESDAY)
       var m = line.match(/^\.(?<name>[A-Z0-9][A-Z0-9 \/-]{2,40}?)(?:\.\.\.|\.{2}|\.)/);
       if (!m) continue;
       var nm = (m.groups && m.groups.name) || m[1] || "";
@@ -1188,27 +1227,6 @@
 
     if (!sectionStarts.length) return [];
 
-    function normName(n) {
-      return String(n)
-        .toUpperCase()
-        .replace(/[^A-Z0-9]+/g, " ")
-        .trim();
-    }
-
-    function isOmitted(n) {
-      var k = normName(n);
-      return (
-        k === "AVIATION" ||
-        k.indexOf("AVIATION") === 0 ||
-        k === "MARINE" ||
-        k.indexOf("MARINE") === 0 ||
-        k === "WATERCRAFT" ||
-        k.indexOf("WATERCRAFT") === 0 ||
-        k === "COASTAL WATERS" ||
-        k.indexOf("COASTAL WATERS") === 0
-      );
-    }
-
     var out = [];
     for (var si = 0; si < sectionStarts.length; si++) {
       var s = sectionStarts[si];
@@ -1217,17 +1235,10 @@
       var headerLine = lines[startLine] || "";
       var bodyLines = lines.slice(startLine + 1, endLine);
 
-      // Trim common AFD separators at end of section.
-      while (bodyLines.length) {
-        var last = String(bodyLines[bodyLines.length - 1]).trim();
-        if (last === "&&" || last === "$$") bodyLines.pop();
-        else break;
-      }
-
       var title = s.name;
-      if (isOmitted(title)) continue;
+      if (afdIsOmittedSectionName(title)) continue;
 
-      var body = bodyLines.join("\n").trim();
+      var body = cleanAfdSectionBody(bodyLines);
       if (!body) continue;
 
       out.push({
@@ -1263,9 +1274,6 @@
     var fields = afdProductFields(afdProduct);
     var issued = fields.issuanceTime || fields.issueTime || "";
     var text = fields.productText || "";
-    // #region agent log
-    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'post-fix',hypothesisId:'H5',location:'js/app.js:renderAfd',message:'AFD fields resolved',data:{hasIssued:!!issued,textLen:String(text||'').length,office:String(fields.issuingOffice||fields.office||'')},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
 
     var wfo = wfoFromPoints(pointsData) || fields.office || fields.issuingOffice || "";
     if (offEl) offEl.textContent = wfo || "—";
@@ -1302,7 +1310,7 @@
           if (sm) sm.textContent = d.open ? "Hide" : "Show";
         });
 
-        var body = document.createElement("pre");
+        var body = document.createElement("div");
         body.className = "discussion-section__body";
         body.textContent = s.body;
 
@@ -1334,9 +1342,6 @@
       "https://api.weather.gov/products/types/AFD/locations/" +
       encodeURIComponent(wfo);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H4',location:'js/app.js:loadAfdForPoints',message:'AFD list request',data:{wfo:String(wfo||''),listUrl:String(listUrl||'')},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
     return apiNws(listUrl).then(function (listData) {
       var graph = (listData && listData["@graph"]) || (listData && listData.graph) || [];
       if (!graph || !graph.length) throw new Error("No AFD products found for this office");
@@ -1358,9 +1363,6 @@
       var m = idStr.match(/\/products\/([^/?#]+)(?:[?#].*)?$/);
       var productId = m && m[1] ? m[1] : idStr;
       var productUrl = "https://api.weather.gov/products/" + encodeURIComponent(productId);
-      // #region agent log
-      fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H4',location:'js/app.js:loadAfdForPoints',message:'AFD product request',data:{productId:String(productId||''),productUrl:String(productUrl||'')},timestamp:Date.now()})}).catch(()=>{});
-      // #endregion agent log
       return apiNws(productUrl);
     });
   }
@@ -1397,9 +1399,6 @@
         var props = pointsData.properties || {};
         var gridUrl = props.forecastGridData;
         var forecastUrl = props.forecast;
-        // #region agent log
-        fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H2',location:'js/app.js:loadForecast',message:'Points resolved URLs',data:{cwa:((props&&props.cwa)||null),forecastOffice:((props&&props.forecastOffice)||null),forecastGridData:String(gridUrl||''),forecast:String(forecastUrl||'')},timestamp:Date.now()})}).catch(()=>{});
-        // #endregion agent log
         if (!gridUrl || !forecastUrl) {
           throw new Error("Missing forecastGridData or forecast URL in NWS response");
         }
@@ -1518,9 +1517,6 @@
   }
 
   function init() {
-    // #region agent log
-    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H3',location:'js/app.js:init',message:'App init location',data:{href:String(location.href||''),origin:String(location.origin||''),path:String(location.pathname||'')},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion agent log
     var btn = $("btn-geolocate");
     var form = $("form-coords");
     if (btn) btn.addEventListener("click", onGeolocate);
