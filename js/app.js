@@ -1240,6 +1240,16 @@
     return out;
   }
 
+  /** NWS /products/{id} returns flat JSON-LD; grid GeoJSON uses properties. */
+  function afdProductFields(afdProduct) {
+    if (!afdProduct) return {};
+    var nested = afdProduct.properties;
+    if (nested && typeof nested === "object" && (nested.productText || nested.issuanceTime)) {
+      return nested;
+    }
+    return afdProduct;
+  }
+
   function renderAfd(pointsData, afdProduct) {
     var sec = $("section-discussion");
     if (!sec) return;
@@ -1250,11 +1260,14 @@
     var sectionsEl = $("discussion-sections");
     var rawEl = $("discussion-raw");
 
-    var props = (afdProduct && afdProduct.properties) || {};
-    var issued = props.issuanceTime || props.issueTime || "";
-    var text = props.productText || "";
+    var fields = afdProductFields(afdProduct);
+    var issued = fields.issuanceTime || fields.issueTime || "";
+    var text = fields.productText || "";
+    // #region agent log
+    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'post-fix',hypothesisId:'H5',location:'js/app.js:renderAfd',message:'AFD fields resolved',data:{hasIssued:!!issued,textLen:String(text||'').length,office:String(fields.issuingOffice||fields.office||'')},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
 
-    var wfo = wfoFromPoints(pointsData) || props.office || "";
+    var wfo = wfoFromPoints(pointsData) || fields.office || fields.issuingOffice || "";
     if (offEl) offEl.textContent = wfo || "—";
     if (issEl) issEl.textContent = issued ? formatShortTime(issued) : "—";
     if (meta) meta.hidden = false;
