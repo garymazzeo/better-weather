@@ -1319,8 +1319,7 @@
 
     var listUrl =
       "https://api.weather.gov/products/types/AFD/locations/" +
-      encodeURIComponent(wfo) +
-      "?limit=10";
+      encodeURIComponent(wfo);
 
     // #region agent log
     fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H4',location:'js/app.js:loadAfdForPoints',message:'AFD list request',data:{wfo:String(wfo||''),listUrl:String(listUrl||'')},timestamp:Date.now()})}).catch(()=>{});
