@@ -73,24 +73,40 @@
   }
 
   function apiFetchJson(url, debugLabel) {
-    return fetch(url).then(function (res) {
-      return res.json().then(function (data) {
+    return fetch(url)
+      .then(function (res) {
+        return res.json().then(function (data) {
+        // #region agent log
+        fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H1',location:'js/app.js:apiFetchJson',message:'API response',data:{debugLabel:String(debugLabel||''),url:String(url||''),status:res.status,ok:res.ok,error:(data&&data.error)||null,hasData:!!data},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion agent log
         if (!res.ok) {
           var err = (data && data.error) || res.statusText || "Request failed";
           throw new Error(err);
         }
         return data;
+        });
+      })
+      .catch(function (err) {
+        // #region agent log
+        fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H3',location:'js/app.js:apiFetchJson',message:'API fetch failed',data:{debugLabel:String(debugLabel||''),url:String(url||''),errorName:String((err&&err.name)||''),errorMessage:String((err&&err.message)||'')},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion agent log
+        throw err;
       });
-    });
   }
 
   function apiPoints(lat, lon) {
     var q =
       "lat=" + encodeURIComponent(String(lat)) + "&lon=" + encodeURIComponent(String(lon));
+    // #region agent log
+    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H2',location:'js/app.js:apiPoints',message:'Calling points proxy',data:{lat:Number(lat),lon:Number(lon),url:apiUrl("api/points.php?" + q)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
     return apiFetchJson(apiUrl("api/points.php?" + q), "points");
   }
 
   function apiNws(url) {
+    // #region agent log
+    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H3',location:'js/app.js:apiNws',message:'Calling NWS proxy',data:{upstreamUrl:String(url||''),proxyUrl:apiUrl("api/nws.php?url=" + encodeURIComponent(url))},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
     return apiFetchJson(
       apiUrl("api/nws.php?url=" + encodeURIComponent(url)),
       "nws"
@@ -1306,6 +1322,9 @@
       encodeURIComponent(wfo) +
       "?limit=10";
 
+    // #region agent log
+    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H4',location:'js/app.js:loadAfdForPoints',message:'AFD list request',data:{wfo:String(wfo||''),listUrl:String(listUrl||'')},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
     return apiNws(listUrl).then(function (listData) {
       var graph = (listData && listData["@graph"]) || (listData && listData.graph) || [];
       if (!graph || !graph.length) throw new Error("No AFD products found for this office");
@@ -1327,6 +1346,9 @@
       var m = idStr.match(/\/products\/([^/?#]+)(?:[?#].*)?$/);
       var productId = m && m[1] ? m[1] : idStr;
       var productUrl = "https://api.weather.gov/products/" + encodeURIComponent(productId);
+      // #region agent log
+      fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H4',location:'js/app.js:loadAfdForPoints',message:'AFD product request',data:{productId:String(productId||''),productUrl:String(productUrl||'')},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion agent log
       return apiNws(productUrl);
     });
   }
@@ -1363,6 +1385,9 @@
         var props = pointsData.properties || {};
         var gridUrl = props.forecastGridData;
         var forecastUrl = props.forecast;
+        // #region agent log
+        fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H2',location:'js/app.js:loadForecast',message:'Points resolved URLs',data:{cwa:((props&&props.cwa)||null),forecastOffice:((props&&props.forecastOffice)||null),forecastGridData:String(gridUrl||''),forecast:String(forecastUrl||'')},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion agent log
         if (!gridUrl || !forecastUrl) {
           throw new Error("Missing forecastGridData or forecast URL in NWS response");
         }
@@ -1481,6 +1506,9 @@
   }
 
   function init() {
+    // #region agent log
+    fetch('http://127.0.0.1:7840/ingest/3c2910a3-e03b-4be9-8b4f-2fbdd55d68df',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'b93505'},body:JSON.stringify({sessionId:'b93505',runId:'pre-fix',hypothesisId:'H3',location:'js/app.js:init',message:'App init location',data:{href:String(location.href||''),origin:String(location.origin||''),path:String(location.pathname||'')},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion agent log
     var btn = $("btn-geolocate");
     var form = $("form-coords");
     if (btn) btn.addEventListener("click", onGeolocate);
