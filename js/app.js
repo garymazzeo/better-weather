@@ -72,7 +72,7 @@
     }
   }
 
-  function apiFetchJson(url, debugLabel) {
+  function apiFetchJson(url) {
     return fetch(url).then(function (res) {
       return res.json().then(function (data) {
         if (!res.ok) {
@@ -87,14 +87,11 @@
   function apiPoints(lat, lon) {
     var q =
       "lat=" + encodeURIComponent(String(lat)) + "&lon=" + encodeURIComponent(String(lon));
-    return apiFetchJson(apiUrl("api/points.php?" + q), "points");
+    return apiFetchJson(apiUrl("api/points.php?" + q));
   }
 
   function apiNws(url) {
-    return apiFetchJson(
-      apiUrl("api/nws.php?url=" + encodeURIComponent(url)),
-      "nws"
-    );
+    return apiFetchJson(apiUrl("api/nws.php?url=" + encodeURIComponent(url)));
   }
 
   function formatShortTime(iso) {
