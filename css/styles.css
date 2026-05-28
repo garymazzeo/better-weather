@@ -237,6 +237,131 @@ body {
   color: var(--text-muted);
 }
 
+.discussion-panel .panel__head {
+  margin-bottom: 0.85rem;
+}
+
+.discussion-status {
+  margin: 0 0 0.85rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.discussion-status--loading {
+  border-color: var(--accent-muted);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.discussion-status--error {
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fecaca;
+}
+
+.discussion-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 1rem;
+  margin-bottom: 0.85rem;
+}
+
+.discussion-meta__row {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.discussion-meta__label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.discussion-meta__value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.discussion-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.discussion-section {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.discussion-section > summary {
+  cursor: pointer;
+  padding: 0.65rem 0.8rem;
+  list-style: none;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.discussion-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.discussion-section__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.discussion-section__hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.discussion-section__body {
+  margin: 0;
+  padding: 0 0.8rem 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.discussion-raw {
+  margin: 0;
+  padding: 0.85rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .location-actions {
   display: flex;
   flex-wrap: wrap;

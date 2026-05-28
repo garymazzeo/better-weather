@@ -37,9 +37,9 @@ if ($scheme !== 'https' || $host !== 'api.weather.gov') {
     exit;
 }
 
-// Allowlist path prefixes (forecast + point metadata)
+// Allowlist path prefixes (forecast + point metadata + text products)
 if (
-    !preg_match('#^/(points|gridpoints|stations)/#', $path)
+    !preg_match('#^/(points|gridpoints|stations|products)/#', $path)
 ) {
     better_weather_json_error(400, 'Path not allowed');
     exit;

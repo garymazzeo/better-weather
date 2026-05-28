@@ -246,6 +246,36 @@
         <p class="panel__sub">12-hour periods · scroll horizontally</p>
         <div class="period-strip" id="period-strip" role="list"></div>
       </section>
+
+      <section
+        class="panel discussion-panel"
+        aria-labelledby="discussion-heading"
+        id="section-discussion"
+        hidden
+      >
+        <div class="panel__head">
+          <h2 id="discussion-heading" class="panel__title">Forecast discussion</h2>
+          <p class="panel__sub" id="discussion-subtitle">
+            Area Forecast Discussion (AFD) · local NWS office
+          </p>
+        </div>
+
+        <p class="discussion-status" id="discussion-status" role="status" aria-live="polite" hidden></p>
+
+        <div class="discussion-meta" id="discussion-meta" hidden>
+          <p class="discussion-meta__row">
+            <span class="discussion-meta__label">Office</span>
+            <span class="discussion-meta__value" id="discussion-office">—</span>
+          </p>
+          <p class="discussion-meta__row">
+            <span class="discussion-meta__label">Issued</span>
+            <span class="discussion-meta__value" id="discussion-issued">—</span>
+          </p>
+        </div>
+
+        <div class="discussion-sections" id="discussion-sections" hidden></div>
+        <pre class="discussion-raw" id="discussion-raw" hidden></pre>
+      </section>
     </main>
 
     <footer class="site-footer">

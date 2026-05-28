@@ -1094,6 +1094,243 @@
     }
   }
 
+  function setDiscussionVisible(vis) {
+    var sec = $("section-discussion");
+    if (sec) sec.hidden = !vis;
+  }
+
+  function setDiscussionStatus(message, kind) {
+    var el = $("discussion-status");
+    if (!el) return;
+    if (!message) {
+      el.hidden = true;
+      el.textContent = "";
+      el.className = "discussion-status";
+      el.setAttribute("role", "status");
+      return;
+    }
+    el.hidden = false;
+    el.textContent = message;
+    el.className = "discussion-status";
+    if (kind === "loading") el.classList.add("discussion-status--loading");
+    if (kind === "error") el.classList.add("discussion-status--error");
+    el.setAttribute("role", kind === "error" ? "alert" : "status");
+  }
+
+  function clearDiscussionUi() {
+    var meta = $("discussion-meta");
+    var secs = $("discussion-sections");
+    var raw = $("discussion-raw");
+    if (meta) meta.hidden = true;
+    if (secs) {
+      secs.hidden = true;
+      secs.innerHTML = "";
+    }
+    if (raw) {
+      raw.hidden = true;
+      raw.textContent = "";
+    }
+    var off = $("discussion-office");
+    var iss = $("discussion-issued");
+    if (off) off.textContent = "—";
+    if (iss) iss.textContent = "—";
+    setDiscussionStatus("", "");
+  }
+
+  function wfoFromPoints(pointsData) {
+    var props = (pointsData && pointsData.properties) || {};
+    var cwa = props.cwa;
+    if (cwa && typeof cwa === "string") return cwa.toUpperCase();
+    var fo = props.forecastOffice;
+    if (fo && typeof fo === "string") {
+      var m = fo.match(/\/offices\/([A-Z0-9]{3,4})\/?$/i);
+      if (m && m[1]) return String(m[1]).toUpperCase();
+    }
+    return "";
+  }
+
+  function parseAfdSections(productText) {
+    var raw = String(productText || "");
+    if (!raw.trim()) return [];
+
+    var lines = raw.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+
+    var sectionStarts = [];
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      // Typical AFD headers look like:
+      // .SYNOPSIS...
+      // .NEAR TERM /THROUGH TONIGHT/...
+      // .LONG TERM...(SUNDAY THROUGH WEDNESDAY)
+      var m = line.match(/^\.(?<name>[A-Z0-9][A-Z0-9 \/-]{2,40}?)(?:\.\.\.|\.{2}|\.)/);
+      if (!m) continue;
+      var nm = (m.groups && m.groups.name) || m[1] || "";
+      nm = String(nm).trim();
+      if (!nm) continue;
+      sectionStarts.push({ idx: i, name: nm });
+    }
+
+    if (!sectionStarts.length) return [];
+
+    function normName(n) {
+      return String(n)
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, " ")
+        .trim();
+    }
+
+    function isOmitted(n) {
+      var k = normName(n);
+      return (
+        k === "AVIATION" ||
+        k.indexOf("AVIATION") === 0 ||
+        k === "MARINE" ||
+        k.indexOf("MARINE") === 0 ||
+        k === "WATERCRAFT" ||
+        k.indexOf("WATERCRAFT") === 0 ||
+        k === "COASTAL WATERS" ||
+        k.indexOf("COASTAL WATERS") === 0
+      );
+    }
+
+    var out = [];
+    for (var si = 0; si < sectionStarts.length; si++) {
+      var s = sectionStarts[si];
+      var startLine = s.idx;
+      var endLine = si + 1 < sectionStarts.length ? sectionStarts[si + 1].idx : lines.length;
+      var headerLine = lines[startLine] || "";
+      var bodyLines = lines.slice(startLine + 1, endLine);
+
+      // Trim common AFD separators at end of section.
+      while (bodyLines.length) {
+        var last = String(bodyLines[bodyLines.length - 1]).trim();
+        if (last === "&&" || last === "$$") bodyLines.pop();
+        else break;
+      }
+
+      var title = s.name;
+      if (isOmitted(title)) continue;
+
+      var body = bodyLines.join("\n").trim();
+      if (!body) continue;
+
+      out.push({
+        title: title,
+        headerLine: headerLine.trim(),
+        body: body,
+      });
+    }
+
+    return out;
+  }
+
+  function renderAfd(pointsData, afdProduct) {
+    var sec = $("section-discussion");
+    if (!sec) return;
+
+    var meta = $("discussion-meta");
+    var offEl = $("discussion-office");
+    var issEl = $("discussion-issued");
+    var sectionsEl = $("discussion-sections");
+    var rawEl = $("discussion-raw");
+
+    var props = (afdProduct && afdProduct.properties) || {};
+    var issued = props.issuanceTime || props.issueTime || "";
+    var text = props.productText || "";
+
+    var wfo = wfoFromPoints(pointsData) || props.office || "";
+    if (offEl) offEl.textContent = wfo || "—";
+    if (issEl) issEl.textContent = issued ? formatShortTime(issued) : "—";
+    if (meta) meta.hidden = false;
+
+    var sections = parseAfdSections(text);
+    if (sectionsEl) sectionsEl.innerHTML = "";
+
+    if (sections && sections.length && sectionsEl) {
+      for (var i = 0; i < sections.length; i++) {
+        var s = sections[i];
+        var details = document.createElement("details");
+        details.className = "discussion-section";
+        if (i < 2) details.open = true;
+
+        var summary = document.createElement("summary");
+
+        var t = document.createElement("span");
+        t.className = "discussion-section__title";
+        t.textContent = s.title;
+
+        var hint = document.createElement("span");
+        hint.className = "discussion-section__hint";
+        hint.textContent = i < 2 ? "Hide" : "Show";
+
+        summary.appendChild(t);
+        summary.appendChild(hint);
+
+        details.addEventListener("toggle", function (e) {
+          var d = e.currentTarget;
+          if (!d) return;
+          var sm = d.querySelector("summary .discussion-section__hint");
+          if (sm) sm.textContent = d.open ? "Hide" : "Show";
+        });
+
+        var body = document.createElement("pre");
+        body.className = "discussion-section__body";
+        body.textContent = s.body;
+
+        details.appendChild(summary);
+        details.appendChild(body);
+        sectionsEl.appendChild(details);
+      }
+
+      sectionsEl.hidden = false;
+      if (rawEl) rawEl.hidden = true;
+      setDiscussionStatus("", "");
+      return;
+    }
+
+    // Fallback: raw text
+    if (rawEl) {
+      rawEl.textContent = String(text || "").trim();
+      rawEl.hidden = false;
+    }
+    if (sectionsEl) sectionsEl.hidden = true;
+    setDiscussionStatus("", "");
+  }
+
+  function loadAfdForPoints(pointsData) {
+    var wfo = wfoFromPoints(pointsData);
+    if (!wfo) return Promise.reject(new Error("No forecast office found for this location"));
+
+    var listUrl =
+      "https://api.weather.gov/products/types/AFD/locations/" +
+      encodeURIComponent(wfo) +
+      "?limit=10";
+
+    return apiNws(listUrl).then(function (listData) {
+      var graph = (listData && listData["@graph"]) || (listData && listData.graph) || [];
+      if (!graph || !graph.length) throw new Error("No AFD products found for this office");
+
+      var best = null;
+      for (var i = 0; i < graph.length; i++) {
+        var it = graph[i] || {};
+        var t = it.issuanceTime || it.issueTime || "";
+        var d = t ? new Date(t) : null;
+        var ms = d && !isNaN(d.getTime()) ? d.getTime() : 0;
+        if (!best || ms > best.ms) {
+          var idAny = it.id || it["@id"] || "";
+          best = { ms: ms, idAny: idAny, issuanceTime: t };
+        }
+      }
+      if (!best || !best.idAny) throw new Error("Could not determine latest AFD product id");
+
+      var idStr = String(best.idAny);
+      var m = idStr.match(/\/products\/([^/?#]+)(?:[?#].*)?$/);
+      var productId = m && m[1] ? m[1] : idStr;
+      var productUrl = "https://api.weather.gov/products/" + encodeURIComponent(productId);
+      return apiNws(productUrl);
+    });
+  }
+
   function loadForecast(lat, lon) {
     lat = roundCoord(lat);
     lon = roundCoord(lon);
@@ -1116,6 +1353,9 @@
     var secPeriods = $("section-periods");
     if (secPeriods) secPeriods.hidden = true;
     setChartLoadingUi(true);
+    setDiscussionVisible(true);
+    clearDiscussionUi();
+    setDiscussionStatus("Loading forecast discussion…", "loading");
 
     return apiPoints(lat, lon)
       .then(function (pointsData) {
@@ -1126,6 +1366,25 @@
         if (!gridUrl || !forecastUrl) {
           throw new Error("Missing forecastGridData or forecast URL in NWS response");
         }
+
+        loadAfdForPoints(pointsData)
+          .then(function (afdProduct) {
+            renderAfd(pointsData, afdProduct);
+          })
+          .catch(function (err) {
+            console.warn(err);
+            setDiscussionStatus(
+              (err && err.message) || "Could not load forecast discussion.",
+              "error"
+            );
+            var meta = $("discussion-meta");
+            var secs = $("discussion-sections");
+            var raw = $("discussion-raw");
+            if (meta) meta.hidden = true;
+            if (secs) secs.hidden = true;
+            if (raw) raw.hidden = true;
+          });
+
         return Promise.all([apiNws(gridUrl), apiNws(forecastUrl), pointsData]);
       })
       .then(function (results) {
@@ -1174,6 +1433,8 @@
         var well = $("chart-well");
         if (well) well.hidden = true;
         showSections(false);
+        setDiscussionVisible(false);
+        clearDiscussionUi();
         showStatus(err.message || "Something went wrong.", "error");
       })
       .finally(function () {
