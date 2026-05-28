@@ -48,8 +48,23 @@ if (
 $result = better_weather_nws_request($url);
 
 if (!$result['ok']) {
-    $msg = 'NWS request failed';
-    better_weather_json_error($result['status'] >= 400 ? $result['status'] : 502, $msg);
+    $status = $result['status'] >= 400 ? $result['status'] : 502;
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+
+    $prefix = '';
+    if (isset($result['body']) && is_string($result['body'])) {
+        $prefix = substr($result['body'], 0, 240);
+    }
+
+    echo json_encode([
+        'error' => 'NWS request failed',
+        'upstream' => [
+            'status' => $result['status'],
+            'content_type' => $result['content_type'],
+            'body_prefix' => $prefix,
+        ],
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
