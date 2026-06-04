@@ -48,30 +48,43 @@
           <button type="button" class="btn btn--primary" id="btn-geolocate">Use my location</button>
           <span class="location-dialog__or" aria-hidden="true">or</span>
         </div>
-        <form class="coords-form" id="form-coords" novalidate>
-          <label class="sr-only" for="input-lat">Latitude</label>
+        <form class="place-form" id="form-place" novalidate>
+          <label class="sr-only" for="input-zip">ZIP code</label>
           <input
-            id="input-lat"
-            name="lat"
+            id="input-zip"
+            name="zip"
             type="text"
-            inputmode="decimal"
-            placeholder="Latitude"
-            autocomplete="off"
-            aria-describedby="coords-hint"
+            inputmode="numeric"
+            placeholder="ZIP code"
+            autocomplete="postal-code"
+            maxlength="10"
+            aria-describedby="place-hint"
           />
-          <label class="sr-only" for="input-lon">Longitude</label>
+          <span class="place-form__or" aria-hidden="true">or</span>
+          <label class="sr-only" for="input-city">City</label>
           <input
-            id="input-lon"
-            name="lon"
+            id="input-city"
+            name="city"
             type="text"
-            inputmode="decimal"
-            placeholder="Longitude"
-            autocomplete="off"
+            placeholder="City"
+            autocomplete="address-level2"
           />
-          <button type="submit" class="btn btn--secondary" id="btn-load-coords">Load forecast</button>
+          <label class="sr-only" for="input-state">State</label>
+          <input
+            id="input-state"
+            name="state"
+            type="text"
+            placeholder="ST"
+            autocomplete="address-level1"
+            maxlength="2"
+            autocapitalize="characters"
+            spellcheck="false"
+          />
+          <button type="submit" class="btn btn--secondary" id="btn-load-place">Load forecast</button>
         </form>
-        <p id="coords-hint" class="hint">
-          WGS84 decimal degrees. Geolocation needs HTTPS in most browsers.
+        <p id="place-hint" class="hint">
+          U.S. locations only. Use a ZIP code, or city and two-letter state. Geolocation needs HTTPS in
+          most browsers.
         </p>
       </div>
     </dialog>
@@ -96,34 +109,46 @@
             Use my location
           </button>
           <span class="location-actions__or" aria-hidden="true">or</span>
-          <form class="coords-form" id="form-coords-hero" novalidate>
-            <label class="sr-only" for="input-lat-hero">Latitude</label>
+          <form class="place-form" id="form-place-hero" novalidate>
+            <label class="sr-only" for="input-zip-hero">ZIP code</label>
             <input
-              id="input-lat-hero"
-              name="lat"
+              id="input-zip-hero"
+              name="zip"
               type="text"
-              inputmode="decimal"
-              placeholder="Latitude"
-              autocomplete="off"
-              aria-describedby="coords-hint-hero"
+              inputmode="numeric"
+              placeholder="ZIP code"
+              autocomplete="postal-code"
+              maxlength="10"
+              aria-describedby="place-hint-hero"
             />
-            <label class="sr-only" for="input-lon-hero">Longitude</label>
+            <span class="place-form__or" aria-hidden="true">or</span>
+            <label class="sr-only" for="input-city-hero">City</label>
             <input
-              id="input-lon-hero"
-              name="lon"
+              id="input-city-hero"
+              name="city"
               type="text"
-              inputmode="decimal"
-              placeholder="Longitude"
-              autocomplete="off"
+              placeholder="City"
+              autocomplete="address-level2"
             />
-            <button type="submit" class="btn btn--secondary" id="btn-load-coords-hero">
+            <label class="sr-only" for="input-state-hero">State</label>
+            <input
+              id="input-state-hero"
+              name="state"
+              type="text"
+              placeholder="ST"
+              autocomplete="address-level1"
+              maxlength="2"
+              autocapitalize="characters"
+              spellcheck="false"
+            />
+            <button type="submit" class="btn btn--secondary" id="btn-load-place-hero">
               Load forecast
             </button>
           </form>
         </div>
-        <p id="coords-hint-hero" class="hint">
-          Coordinates use WGS84 (decimal degrees). Geolocation needs a secure (HTTPS) context in
-          most browsers.
+        <p id="place-hint-hero" class="hint">
+          U.S. locations only. Use a ZIP code, or city and two-letter state. Geolocation needs a
+          secure (HTTPS) context in most browsers.
         </p>
         <p class="location-readout location-readout--hero" id="location-readout-hero" aria-live="polite"></p>
       </section>

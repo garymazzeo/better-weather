@@ -174,7 +174,7 @@ body {
   font-size: 0.85rem;
 }
 
-.location-dialog .coords-form {
+.location-dialog .place-form {
   margin-bottom: 0.65rem;
 }
 
@@ -376,15 +376,19 @@ body {
   font-size: 0.85rem;
 }
 
-.coords-form {
+.place-form {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 }
 
-.coords-form input {
-  width: 8rem;
+.place-form__or {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.place-form input {
   max-width: 100%;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--border);
@@ -394,7 +398,20 @@ body {
   font: inherit;
 }
 
-.coords-form input:focus-visible {
+.place-form input[name="zip"] {
+  width: 6.5rem;
+}
+
+.place-form input[name="city"] {
+  width: 9rem;
+}
+
+.place-form input[name="state"] {
+  width: 3.25rem;
+  text-transform: uppercase;
+}
+
+.place-form input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
