@@ -39,15 +39,17 @@
       "btn-geolocate",
       "btn-geolocate-hero",
       "btn-change-location",
-      "btn-load-coords",
-      "btn-load-coords-hero",
+      "btn-load-place",
+      "btn-load-place-hero",
     ];
     for (var b = 0; b < extraBtns.length; b++) {
       var el = $(extraBtns[b]);
       if (el) el.disabled = isLoading;
     }
-    var form = $("form-coords");
-    if (form) {
+    var forms = ["form-place", "form-place-hero"];
+    for (var f = 0; f < forms.length; f++) {
+      var form = $(forms[f]);
+      if (!form) continue;
       var inputs = form.querySelectorAll("button, input");
       for (var i = 0; i < inputs.length; i++) inputs[i].disabled = isLoading;
     }
@@ -88,6 +90,43 @@
     var q =
       "lat=" + encodeURIComponent(String(lat)) + "&lon=" + encodeURIComponent(String(lon));
     return apiFetchJson(apiUrl("api/points.php?" + q));
+  }
+
+  function apiGeocode(params) {
+    var parts = [];
+    if (params.zip) parts.push("zip=" + encodeURIComponent(params.zip));
+    if (params.city) parts.push("city=" + encodeURIComponent(params.city));
+    if (params.state) parts.push("state=" + encodeURIComponent(params.state));
+    return apiFetchJson(apiUrl("api/geocode.php?" + parts.join("&")));
+  }
+
+  function readPlaceFromForm(form) {
+    var zipEl = form.querySelector('[name="zip"]');
+    var cityEl = form.querySelector('[name="city"]');
+    var stateEl = form.querySelector('[name="state"]');
+    return {
+      zip: zipEl ? String(zipEl.value).trim() : "",
+      city: cityEl ? String(cityEl.value).trim() : "",
+      state: stateEl ? String(stateEl.value).trim().toUpperCase() : "",
+    };
+  }
+
+  function syncPlaceInputs(zip, city, state) {
+    var zipIds = ["input-zip", "input-zip-hero"];
+    var cityIds = ["input-city", "input-city-hero"];
+    var stateIds = ["input-state", "input-state-hero"];
+    for (var zi = 0; zi < zipIds.length; zi++) {
+      var z = $(zipIds[zi]);
+      if (z) z.value = zip;
+    }
+    for (var ci = 0; ci < cityIds.length; ci++) {
+      var c = $(cityIds[ci]);
+      if (c) c.value = city;
+    }
+    for (var si = 0; si < stateIds.length; si++) {
+      var s = $(stateIds[si]);
+      if (s) s.value = state;
+    }
   }
 
   function apiNws(url) {
@@ -1368,15 +1407,6 @@
     lat = roundCoord(lat);
     lon = roundCoord(lon);
 
-    var sLat = String(lat);
-    var sLon = String(lon);
-    var coordIds = ["input-lat", "input-lon", "input-lat-hero", "input-lon-hero"];
-    var coordVals = [sLat, sLon, sLat, sLon];
-    for (var ci = 0; ci < coordIds.length; ci++) {
-      var inp = $(coordIds[ci]);
-      if (inp) inp.value = coordVals[ci];
-    }
-
     var mainEl = $("main");
     if (mainEl) mainEl.setAttribute("aria-busy", "true");
 
@@ -1490,7 +1520,7 @@
       function () {
         setLoading(false);
         showStatus(
-          "Could not get location. Enter coordinates or check permissions.",
+          "Could not get location. Enter a ZIP or city and state, or check permissions.",
           "error"
         );
       },
@@ -1498,39 +1528,81 @@
     );
   }
 
-  function onSubmitCoords(e) {
+  function onSubmitPlace(e) {
     e.preventDefault();
     var form = e.currentTarget;
-    var latEl = form.querySelector('[name="lat"]');
-    var lonEl = form.querySelector('[name="lon"]');
-    if (!latEl || !lonEl) return;
-    var lat = parseFloat(latEl.value);
-    var lon = parseFloat(lonEl.value);
-    if (isNaN(lat) || isNaN(lon)) {
-      showStatus("Enter valid latitude and longitude numbers.", "error");
+    var place = readPlaceFromForm(form);
+    var zip = place.zip;
+    var city = place.city;
+    var state = place.state;
+
+    if (zip) {
+      if (!/^\d{5}(-\d{4})?$/.test(zip)) {
+        showStatus("Enter a valid 5-digit U.S. ZIP code.", "error");
+        return;
+      }
+      if (city || state) {
+        showStatus("Use either a ZIP code or city and state, not both.", "error");
+        return;
+      }
+      setLoading(true);
+      showStatus("Looking up location…", "loading");
+      apiGeocode({ zip: zip })
+        .then(function (geo) {
+          syncPlaceInputs(zip, "", "");
+          loadForecast(geo.lat, geo.lon);
+        })
+        .catch(function (err) {
+          setLoading(false);
+          showStatus(err.message || "Could not find that location.", "error");
+        });
       return;
     }
-    loadForecast(lat, lon);
+
+    if (city || state) {
+      if (!city || !state) {
+        showStatus("Enter both city and state (e.g. Seattle and WA).", "error");
+        return;
+      }
+      if (!/^[A-Z]{2}$/.test(state)) {
+        showStatus("State must be a two-letter code (e.g. WA).", "error");
+        return;
+      }
+      setLoading(true);
+      showStatus("Looking up location…", "loading");
+      apiGeocode({ city: city, state: state })
+        .then(function (geo) {
+          syncPlaceInputs("", city, state);
+          loadForecast(geo.lat, geo.lon);
+        })
+        .catch(function (err) {
+          setLoading(false);
+          showStatus(err.message || "Could not find that location.", "error");
+        });
+      return;
+    }
+
+    showStatus("Enter a ZIP code, or a city and state.", "error");
   }
 
   function init() {
     var btn = $("btn-geolocate");
-    var form = $("form-coords");
+    var form = $("form-place");
     if (btn) btn.addEventListener("click", onGeolocate);
-    if (form) form.addEventListener("submit", onSubmitCoords);
+    if (form) form.addEventListener("submit", onSubmitPlace);
 
     var btnHero = $("btn-geolocate-hero");
-    var formHero = $("form-coords-hero");
+    var formHero = $("form-place-hero");
     if (btnHero) btnHero.addEventListener("click", onGeolocate);
-    if (formHero) formHero.addEventListener("submit", onSubmitCoords);
+    if (formHero) formHero.addEventListener("submit", onSubmitPlace);
 
     var dlg = $("location-dialog");
     var changeBtn = $("btn-change-location");
     if (changeBtn && dlg && typeof dlg.showModal === "function") {
       changeBtn.addEventListener("click", function () {
         dlg.showModal();
-        var lat = $("input-lat");
-        if (lat) lat.focus();
+        var zip = $("input-zip");
+        if (zip) zip.focus();
       });
     }
   }
