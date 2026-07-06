@@ -6,6 +6,12 @@
   "use strict";
 
   var gridCharts = [];
+  var STORAGE_KEY = "better-weather-location";
+  var activeLat = null;
+  var activeLon = null;
+  var forecastLoadInFlight = false;
+  var pageReadyForTabRefresh = false;
+  var lastPlaceInputs = { zip: "", city: "", state: "" };
 
   function $(id) {
     return document.getElementById(id);
@@ -126,6 +132,43 @@
     for (var si = 0; si < stateIds.length; si++) {
       var s = $(stateIds[si]);
       if (s) s.value = state;
+    }
+  }
+
+  function saveLocation(data) {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          lat: roundCoord(data.lat),
+          lon: roundCoord(data.lon),
+          zip: data.zip || "",
+          city: data.city || "",
+          state: data.state || "",
+        })
+      );
+    } catch (e) {
+      /* private browsing / quota */
+    }
+  }
+
+  function loadSavedLocation() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      var data = JSON.parse(raw);
+      var lat = Number(data.lat);
+      var lon = Number(data.lon);
+      if (!isFinite(lat) || !isFinite(lon)) return null;
+      return {
+        lat: roundCoord(lat),
+        lon: roundCoord(lon),
+        zip: data.zip || "",
+        city: data.city || "",
+        state: data.state || "",
+      };
+    } catch (e) {
+      return null;
     }
   }
 
@@ -1403,22 +1446,32 @@
     });
   }
 
-  function loadForecast(lat, lon) {
+  function loadForecast(lat, lon, options) {
+    options = options || {};
+    var isBackground = !!options.background;
+
     lat = roundCoord(lat);
     lon = roundCoord(lon);
+    activeLat = lat;
+    activeLon = lon;
+    forecastLoadInFlight = true;
 
     var mainEl = $("main");
     if (mainEl) mainEl.setAttribute("aria-busy", "true");
 
     setLoading(true);
-    showStatus("Loading forecast…", "loading");
-    destroyGridCharts();
     var secPeriods = $("section-periods");
-    if (secPeriods) secPeriods.hidden = true;
-    setChartLoadingUi(true);
-    setDiscussionVisible(true);
-    clearDiscussionUi();
-    setDiscussionStatus("Loading forecast discussion…", "loading");
+    if (isBackground) {
+      showStatus("Updating forecast…", "loading");
+    } else {
+      showStatus("Loading forecast…", "loading");
+      destroyGridCharts();
+      if (secPeriods) secPeriods.hidden = true;
+      setChartLoadingUi(true);
+      setDiscussionVisible(true);
+      clearDiscussionUi();
+      setDiscussionStatus("Loading forecast discussion…", "loading");
+    }
 
     return apiPoints(lat, lon)
       .then(function (pointsData) {
@@ -1481,6 +1534,14 @@
 
         setLocationUiCompact(true);
 
+        saveLocation({
+          lat: lat,
+          lon: lon,
+          zip: lastPlaceInputs.zip,
+          city: lastPlaceInputs.city,
+          state: lastPlaceInputs.state,
+        });
+
         if (chartsOk) {
           hideStatus();
         } else {
@@ -1490,6 +1551,10 @@
       })
       .catch(function (err) {
         console.error(err);
+        if (isBackground) {
+          showStatus(err.message || "Could not update forecast.", "error");
+          return;
+        }
         tryCloseLocationDialog();
         destroyGridCharts();
         setChartLoadingUi(false);
@@ -1501,9 +1566,18 @@
         showStatus(err.message || "Something went wrong.", "error");
       })
       .finally(function () {
+        forecastLoadInFlight = false;
         setLoading(false);
         if (mainEl) mainEl.setAttribute("aria-busy", "false");
       });
+  }
+
+  function onTabVisible() {
+    if (document.visibilityState !== "visible") return;
+    if (!pageReadyForTabRefresh) return;
+    if (activeLat == null || activeLon == null) return;
+    if (forecastLoadInFlight) return;
+    loadForecast(activeLat, activeLon, { background: true });
   }
 
   function onGeolocate() {
@@ -1515,6 +1589,8 @@
     showStatus("Getting location…", "loading");
     navigator.geolocation.getCurrentPosition(
       function (pos) {
+        lastPlaceInputs = { zip: "", city: "", state: "" };
+        syncPlaceInputs("", "", "");
         loadForecast(pos.coords.latitude, pos.coords.longitude);
       },
       function () {
@@ -1549,6 +1625,7 @@
       showStatus("Looking up location…", "loading");
       apiGeocode({ zip: zip })
         .then(function (geo) {
+          lastPlaceInputs = { zip: zip, city: "", state: "" };
           syncPlaceInputs(zip, "", "");
           loadForecast(geo.lat, geo.lon);
         })
@@ -1572,6 +1649,7 @@
       showStatus("Looking up location…", "loading");
       apiGeocode({ city: city, state: state })
         .then(function (geo) {
+          lastPlaceInputs = { zip: "", city: city, state: state };
           syncPlaceInputs("", city, state);
           loadForecast(geo.lat, geo.lon);
         })
@@ -1604,6 +1682,23 @@
         var zip = $("input-zip");
         if (zip) zip.focus();
       });
+    }
+
+    document.addEventListener("visibilitychange", onTabVisible);
+
+    var saved = loadSavedLocation();
+    if (saved) {
+      lastPlaceInputs = {
+        zip: saved.zip || "",
+        city: saved.city || "",
+        state: saved.state || "",
+      };
+      syncPlaceInputs(saved.zip || "", saved.city || "", saved.state || "");
+      loadForecast(saved.lat, saved.lon).finally(function () {
+        pageReadyForTabRefresh = true;
+      });
+    } else {
+      pageReadyForTabRefresh = true;
     }
   }
 
